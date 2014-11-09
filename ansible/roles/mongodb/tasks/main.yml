@@ -1,0 +1,20 @@
+---
+
+- name: Create repository MongoDB Inc
+  copy: src=mongodb.list dest=/etc/apt/sources.list.d/mongodb.list
+
+- name: Added public key
+  command: apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+
+- name: Update package cache
+  apt: update_cache=yes
+
+- name: Install mongodb packages
+  apt: pkg={{ item }} state=installed
+  with_items:
+      - mongodb-org
+
+- name: Copy mongodb config
+  copy: src=mongodb.conf dest=/etc/mongod.conf
+  notify:
+      - restart mongod

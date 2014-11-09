@@ -1,0 +1,20 @@
+---
+- hosts: all
+  name: 'Update OS, install nginx, mongodb, supervisor, virtualenv and virtualenvwrapper.'
+  user: ubuntu
+  sudo: yes
+  sudo_user: root
+  remote_user: ubuntu
+  vars:
+    - hostname_name: 'yourwebapp'
+    - webapp_domain: 'domain.com'
+    - webapp_directory: 'your_webapp_directory'
+    - webapp_path: '~/'
+    - webapp_envwrapper: '/opt/virtualenvs'
+    - webapp_user: 'ubuntu'
+  roles:
+    - common
+    - mongodb
+    - nginx
+    - supervisor
+    - virtualenvwrapper

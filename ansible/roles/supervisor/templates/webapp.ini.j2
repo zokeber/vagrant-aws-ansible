@@ -1,0 +1,17 @@
+[uwsgi]
+chdir ={{ webapp_path }}/{{ webapp_directory }}
+mountpoint = {{ webapp_path }}/{{ webapp_directory }}
+gid = {{ webapp_user }}
+uid = {{ webapp_user }}
+socket = /tmp/{{ webapp_domain }}.sock
+virtualenv = {{ webapp_envwrapper }}/{{ webapp_directory }}
+plugins = python
+master = True
+chmod-socket = 666
+memory-report = 1
+harakiri = 20
+processes = 4
+profiler = 1
+pythonpath = {{ webapp_path }}/{{ webapp_directory }}
+vacuum = True
+max-requests = 500

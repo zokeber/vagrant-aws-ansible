@@ -1,0 +1,101 @@
+---
+- name: Install packages necesary
+  apt: pkg={{ item }} state=installed
+  with_items:
+    - libc6
+    - libexpat1
+    - libgd2-xpm-dev
+    - libgeoip1
+    - libgeoip-dev
+    - libpam0g
+    - libssl1.0.0
+    - libxml2
+    - libxslt1.1
+    - libxslt-dev
+    - libperl5.18
+    - perl
+    - perlapi-5.18.2
+    - openssl
+    - libssl-dev
+
+- name: Create directory for compiled -> {{ directory_compile }}
+  file: state=directory path={{ directory_compile }}
+
+- name: Download Ngx Pagespeed sources
+  get_url: url=https://github.com/pagespeed/ngx_pagespeed/archive/release-{{ version_ngxspeed }}-beta.zip dest={{ directory_compile }}/release-{{ version_ngxspeed }}-beta.zip
+
+- name: Unzip Ngx Pagespeed
+  command: chdir={{ directory_compile }} /usr/bin/unzip release-{{ version_ngxspeed }}-beta.zip  creates={{ directory_compile }}/ngx_pagespeed-release-{{ version_ngxspeed }}-beta
+
+- name: Download PSOL sources
+  get_url: url=https://dl.google.com/dl/page-speed/psol/{{ version_ngxspeed }}.tar.gz dest={{ directory_compile }}/ngx_pagespeed-release-{{ version_ngxspeed }}-beta/{{ version_ngxspeed }}.tar.gz
+
+- name: Unarchive PSOL
+  command: chdir={{ directory_compile }}/ngx_pagespeed-release-{{ version_ngxspeed }}-beta /bin/tar xzvf {{ version_ngxspeed }}.tar.gz creates={{ directory_compile }}/{{ version_ngxspeed }}
+
+- name: Download Nginx sources
+  get_url: url={{ url_nginx }}/nginx-{{ version_nginx }}.tar.gz dest={{ directory_compile }}/nginx-{{ version_nginx }}.tar.gz
+
+- name: Unarchive Nginx
+  command: chdir={{ directory_compile }} /bin/tar xzvf nginx-{{ version_nginx }}.tar.gz creates={{ directory_compile }}/nginx-{{ version_nginx }}
+
+- name: Compile Nginx
+  command: chdir={{ directory_compile }}/nginx-{{ version_nginx }} ./configure {{ configure_nginx }} --add-module={{ directory_compile }}/ngx_pagespeed-release-{{ version_ngxspeed }}-beta
+
+- name: Make Nginx
+  command: chdir={{ directory_compile }}/nginx-{{ version_nginx }} make
+
+- name: Install Nginx
+  command: chdir={{ directory_compile }}/nginx-{{ version_nginx }} make install
+
+- name: Create Nginx run directory
+  file: state=directory path=/run/nginx
+
+- name: Create Nginx log directory
+  file: state=directory path=/var/log/nginx
+
+- name: Create Nginx sites-available directory
+  file: state=directory path=/etc/nginx/sites-available
+
+- name: Create Nginx sites-enabled directory
+  file: state=directory path=/etc/nginx/sites-enabled
+
+- name: Create Nginx default directory
+  file: dest=/var/lib/nginx/{{ item }} owner=www-data group=www-data state=directory recurse=yes
+  with_items: directory_nginx
+
+- name: Add file nginx in defaults directory
+  copy: src=nginx.defaults dest=/etc/default/nginx owner=root group=root mode=0755
+
+- name: Add nginx init file
+  copy: src=nginx.init dest=/etc/init.d/nginx owner=root group=root mode=0755
+
+- name: Update nginx init
+  command: update-rc.d nginx defaults
+
+- name: Enable nginx init
+  command: update-rc.d nginx enable
+
+- name: Drop original config file
+  template: 'src=nginx.j2 dest=/etc/nginx/nginx.conf owner=root group=root mode=0644'
+
+- name: Add virtualhost website file
+  template: 'src=webapp.j2 dest=/etc/nginx/sites-available/{{ webapp_domain }} owner=root group=root mode=0644'
+
+- name: Drop default virtualhost
+  template: 'src=default.j2 dest=/etc/nginx/sites-available/default owner=root group=root mode=0644'
+
+- name: Create symbolic link for website virtualhost
+  shell: '/bin/ln -fs /etc/nginx/sites-available/{{ webapp_domain }} /etc/nginx/sites-enabled/{{ webapp_domain }}'
+
+- name: Create symbolic link for default virtualhost
+  shell: '/bin/ln -fs /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default'
+
+- name: Create webapp directory
+  sudo: no
+  file: state=directory path={{ webapp_path }}/{{ webapp_directory }}
+
+- name: Create website directory log
+  file: path=/var/log/nginx/{{ webapp_domain }} state=directory
+  notify:
+     - restart nginx

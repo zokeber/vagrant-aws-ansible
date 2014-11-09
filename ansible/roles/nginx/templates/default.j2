@@ -1,0 +1,4 @@
+server {
+    server_name {{ ansible_ssh_host }};
+    rewrite ^(.*) http://{{ webapp_domain }}$1 permanent;
+}

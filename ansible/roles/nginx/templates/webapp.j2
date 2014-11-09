@@ -1,0 +1,21 @@
+server {
+    server_name  www.{{ webapp_domain }};
+    rewrite ^(.*) http://{{ webapp_domain }}$1 permanent;
+}
+
+server {
+
+	server_name {{ webapp_domain }};
+	listen 80;
+	charset utf-8;
+
+    access_log /var/log/nginx/{{ webapp_domain }}/access.log;
+	error_log /var/log/nginx/{{ webapp_domain }}/error.log;
+
+    location / {
+
+        root {{ webapp_path }}/{{ webapp_directory }};
+
+    }
+
+}

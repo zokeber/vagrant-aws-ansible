@@ -1,0 +1,32 @@
+---
+- name: update cache.
+  apt: update_cache=true
+
+- name: Install packages supervisor uwsgi
+  apt: pkg={{item}} state=installed
+  with_items:
+     - python-meld3
+     - supervisor
+     - uwsgi
+     - uwsgi-core
+     - uwsgi-plugin-python
+  notify:
+     - start supervisord
+     - stop supervisord
+
+- name: Remove default file supervisor
+  file: path=/etc/supervisor/supervisord.conf state=absent
+
+- name: Copy new supervisor conf
+  template: src=supervisord.conf.j2 dest=/etc/supervisor/supervisord.conf
+
+- name: Copy uWSGI {{ webapp_domain}}
+  template: src=webapp.ini.j2 dest=/etc/uwsgi/{{ webapp_domain }}.ini
+
+- name: Change file owner
+  action: file dest=/etc/uwsgi/{{ webapp_domain }}.ini owner={{ webapp_user }} group={{ webapp_user }}
+
+- name: Copy supervisor template
+  template: src=webapp.conf.j2 dest=/etc/supervisor/conf.d/{{ webapp_domain }}.conf
+  notify:
+     - restart supervisord

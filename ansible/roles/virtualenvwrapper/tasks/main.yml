@@ -1,0 +1,33 @@
+---
+
+- name: Create a directory to store your virtualenv
+  file: state=directory path={{ webapp_envwrapper }}
+
+- name: Create a directory for hooks
+  file: state=directory path={{ webapp_envwrapper }}/hooks
+
+- name: Change owner in directory to store your virtualenv
+  file: dest={{ webapp_envwrapper }} owner={{ webapp_user }} group={{ webapp_user }} state=directory recurse=yes
+
+- name: Set workon home
+  shell: bash -c "echo \"export WORKON_HOME={{ webapp_envwrapper }}\" >> ~/.bashrc"
+  sudo: no
+
+- name: Set hookse
+  shell: bash -c "echo \"export VIRTUALENVWRAPPER_HOOK_DIR={{ webapp_envwrapper }}/hooks\" >> ~/.bashrc"
+  sudo: no
+
+- name: Path to the execute
+  shell: bash -c "echo \"source /etc/bash_completion.d/virtualenvwrapper\" >> ~/.bashrc"
+  sudo: no
+
+- name: Load workon webapp
+  shell: bash -c "echo \"workon {{ webapp_domain }}\" >> ~/.bashrc"
+  sudo: no
+
+- name: Run mkvirtualenv {{ webapp_domain }}
+  sudo: no
+  shell: . /usr/share/virtualenvwrapper/virtualenvwrapper.sh && WORKON_HOME={{ webapp_envwrapper }} mkvirtualenv {{ webapp_domain }}
+  args:
+    executable: /bin/bash
+    creates: "{{ webapp_domain }}"

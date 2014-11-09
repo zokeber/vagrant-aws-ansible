@@ -1,0 +1,8 @@
+[program:{{ webapp_domain }}]
+command=uwsgi --ini /etc/uwsgi/{{ webapp_domain }}.ini -b 32000 --wsgi-file {{ webapp_path }}/{{ webapp_domain }}/wsgi.py
+user={{ webapp_user }}
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/supervisor/{{ webapp_domain }}-uwsgi.log
+redirect_stderr=true
+stopsignal=QUIT
